@@ -4,33 +4,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DUSTBOY | ZEN FUTURISM 3.0</title>
+    <title>DUSTBOY | LUMINOUS ZEN 4.0</title>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@300;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@200;400;600&display=swap');
 
         :root {
-            --bg-deep: #0a0a0b;
-            --accent-gold: #c5a059;
-            --accent-cyan: #00e5ff;
-            --text-main: #f8f9fa;
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --glass-bg: rgba(255, 255, 255, 0.02);
+            --bg-light: #f5f7fa;
+            --accent-primary: #1a1a1a;
+            --accent-gold: #b08d57;
+            --text-main: #2d3436;
+            --glass-border: rgba(0, 0, 0, 0.05);
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --shadow-soft: 0 20px 60px rgba(0, 0, 0, 0.05);
         }
 
         body {
             margin: 0;
-            background-color: var(--bg-deep);
+            background-color: var(--bg-light);
             color: var(--text-main);
             font-family: 'Inter', sans-serif;
             overflow: hidden;
-            letter-spacing: -0.01em;
+            transition: background 1s ease;
         }
 
         canvas {
             display: block;
-            filter: contrast(110%) brightness(105%);
         }
 
         #ui-overlay {
@@ -40,18 +40,18 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 50px;
+            padding: 60px;
             z-index: 10;
         }
 
-        .minimal-panel {
+        .luminous-panel {
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
-            backdrop-filter: blur(25px);
-            padding: 30px;
+            backdrop-filter: blur(30px);
+            padding: 40px;
             pointer-events: auto;
-            border-radius: 20px;
-            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
+            border-radius: 30px;
+            box-shadow: var(--shadow-soft);
             transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
@@ -63,142 +63,145 @@
 
         .brand {
             font-family: 'Outfit', sans-serif;
-            font-weight: 700;
-            font-size: 0.9rem;
-            letter-spacing: 0.4em;
+            font-weight: 600;
+            font-size: 0.8rem;
+            letter-spacing: 0.5em;
             color: var(--accent-gold);
-            margin-bottom: 30px;
+            margin-bottom: 40px;
+            text-transform: uppercase;
         }
 
         .main-val-group {
-            margin-bottom: 40px;
+            margin-bottom: 50px;
         }
 
         .label {
             font-size: 0.65rem;
             opacity: 0.4;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.15em;
             text-transform: uppercase;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
+            font-weight: 600;
         }
 
         .big-val {
             font-family: 'Outfit', sans-serif;
-            font-size: 3rem;
-            font-weight: 300;
-            line-height: 1;
+            font-size: 4rem;
+            font-weight: 200;
+            line-height: 0.9;
+            color: var(--accent-primary);
         }
 
         .grid-stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            border-top: 1px solid var(--glass-border);
-            pt: 20px;
-            margin-top: 20px;
-            padding-top: 20px;
+            gap: 40px;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(0, 0, 0, 0.03);
         }
 
         #device-list {
-            margin-top: 30px;
+            margin-top: 40px;
             height: 320px;
             overflow-y: auto;
             scrollbar-width: none;
-            mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+            mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
         }
 
         .device-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-            font-size: 0.8rem;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.02);
+            font-size: 0.85rem;
             transition: 0.3s;
         }
 
         .device-row:hover {
-            color: var(--accent-cyan);
+            color: var(--accent-gold);
+            transform: translateX(5px);
         }
 
-        .status-dot {
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 12px;
-        }
-
-        #console-minimal {
-            font-family: 'Inter', sans-serif;
+        #console-luminous {
             font-size: 9px;
-            color: rgba(255, 255, 255, 0.3);
-            max-width: 300px;
-            line-height: 1.6;
+            color: rgba(0, 0, 0, 0.2);
+            max-width: 350px;
+            line-height: 2;
+            letter-spacing: 0.1em;
         }
 
-        #nav-minimal {
+        #nav-luminous {
             display: flex;
-            gap: 40px;
+            gap: 50px;
             pointer-events: auto;
         }
 
         .nav-item {
-            color: rgba(255, 255, 255, 0.4);
+            color: rgba(0, 0, 0, 0.3);
             text-decoration: none;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             letter-spacing: 0.2em;
             transition: 0.3s;
-            position: relative;
+            font-weight: 500;
         }
 
         .nav-item:hover,
         .nav-item.active {
-            color: var(--text-main);
+            color: var(--accent-primary);
+        }
+
+        .nav-item.active {
+            position: relative;
         }
 
         .nav-item.active::after {
             content: '';
             position: absolute;
-            bottom: -10px;
+            bottom: -12px;
             left: 0;
             width: 100%;
-            height: 1px;
+            height: 2px;
             background: var(--accent-gold);
         }
 
         .loading {
             position: fixed;
             inset: 0;
-            background: var(--bg-deep);
+            background: #fff;
             z-index: 10000;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            transition: 1s ease-in-out;
+            transition: 1.5s cubic-bezier(0.7, 0, 0.3, 1);
         }
 
         .loading-logo {
             font-family: 'Outfit', sans-serif;
-            font-weight: 300;
-            font-size: 1.5rem;
-            letter-spacing: 0.8em;
-            color: var(--accent-gold);
-            animation: pulse-luxury 2s infinite ease-in-out;
+            font-weight: 400;
+            font-size: 2rem;
+            letter-spacing: 1em;
+            color: var(--accent-primary);
+            animation: breathe 3s infinite ease-in-out;
+            padding-left: 1em;
+            /* Offset for tracking center */
         }
 
-        @keyframes pulse-luxury {
+        @keyframes breathe {
 
             0%,
             100% {
-                opacity: 0.3;
-                transform: scale(0.98);
+                opacity: 0.2;
+                letter-spacing: 1.2em;
+                filter: blur(2px);
             }
 
             50% {
                 opacity: 1;
-                transform: scale(1);
+                letter-spacing: 0.8em;
+                filter: blur(0);
             }
         }
     </style>
@@ -206,62 +209,62 @@
 
 <body>
     <div id="loading" class="loading">
-        <div class="loading-logo">DUSTBOY PRO</div>
-        <div style="font-size: 8px; margin-top: 20px; opacity: 0.3; letter-spacing: 2px;">CALIBRATING NEURAL
-            ARCHITECTURE</div>
+        <div class="loading-logo">DUSTBOY</div>
+        <div style="font-size: 8px; margin-top: 30px; opacity: 0.2; letter-spacing: 5px;">ARCHITECTURE 4.0 // LUMINOUS
+        </div>
     </div>
 
     <div id="ui-overlay">
         <div class="header">
-            <!-- Left Data Panel -->
-            <div class="minimal-panel" style="width: 380px;">
-                <div class="brand">SYSTEM STATUS</div>
+            <!-- Sensor Intelligence Panel -->
+            <div class="luminous-panel" style="width: 420px;">
+                <div class="brand">Sensor Intelligence</div>
 
                 <div class="main-val-group">
-                    <div class="label">Network Average PM2.5</div>
+                    <div class="label">Regional Average PM2.5</div>
                     <div id="avg-pm" class="big-val">0.0</div>
                 </div>
 
                 <div class="grid-stats">
                     <div class="stat-box">
-                        <div class="label">Active Nodes</div>
-                        <div id="total-st" style="font-size: 1.2rem; font-weight: 500;">0</div>
+                        <div class="label">System Units</div>
+                        <div id="total-st" style="font-size: 1.4rem; font-weight: 400;">0</div>
                     </div>
                     <div class="stat-box">
-                        <div class="label">Uptime</div>
-                        <div id="uptime" style="font-size: 1.2rem; font-weight: 500;">00:00:00</div>
+                        <div class="label">Uptime Sync</div>
+                        <div id="uptime" style="font-size: 1.4rem; font-weight: 400;">00:00:00</div>
                     </div>
                 </div>
 
                 <div id="device-list"></div>
             </div>
 
-            <!-- Right Analytics Panel -->
-            <div class="minimal-panel" style="width: 400px; padding: 40px;">
-                <div class="brand">PEAK ANALYTICS</div>
+            <!-- Peak Analytics Panel -->
+            <div class="luminous-panel" style="width: 440px;">
+                <div class="brand">Analytics Stream</div>
 
                 <div class="main-val-group">
-                    <div class="label">Highest Recorded</div>
+                    <div class="label">Peak Concentration</div>
                     <div id="max-pm" class="big-val" style="color: var(--accent-gold);">0.0</div>
                 </div>
 
-                <div style="margin-top: 40px; height: 180px;">
-                    <canvas id="luxChart"></canvas>
+                <div style="margin-top: 50px; height: 200px; padding: 10px;">
+                    <canvas id="lumeChart"></canvas>
                 </div>
             </div>
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: flex-end;">
-            <div id="console-minimal">
-                [STORAGE] ZEN_CORE_V3_INITIATED<br>
-                [UPLINK] CONNECTED_TO_SECURE_WSS<br>
-                [MODE] MINIMALIST_PREMIUM_ACTIVE
+            <div id="console-luminous">
+                [CORE] Luminous v4.0 Active<br>
+                [WSS] Secure WebSocket Uplink Ready<br>
+                [MODE] High-Clarity Visualization
             </div>
 
-            <div id="nav-minimal">
-                <a href="index.html" class="nav-item">BASE MAP</a>
-                <a href="travel-3d.html" class="nav-item">ETHEREAL 3D</a>
-                <a href="dustboy-3d.html" class="nav-item active">ZEN DASHBOARD</a>
+            <div id="nav-luminous">
+                <a href="index.html" class="nav-item">BASE_MAP</a>
+                <a href="travel-3d.html" class="nav-item">TRAVEL_3D</a>
+                <a href="dustboy-3d.html" class="nav-item active">INTELLIGENCE</a>
             </div>
         </div>
     </div>
@@ -282,56 +285,54 @@
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-        // --- Core Algorithm (Klak Inspired) ---
-        const Zen = {
-            lerp: (a, b, t) => a + (b - a) * t,
+        // --- Sophisticated Utils ---
+        const Lume = {
             expStep: (c, t, s, dt) => t + (c - t) * Math.exp(-s * dt),
-            noise: (p) => {
-                const i = Math.floor(p);
-                const f = p - i;
-                const u = f * f * (3 - 2 * f);
-                const hash = (n) => Math.abs(Math.sin(n) * 43758.5453 % 1);
-                return Zen.lerp(hash(i), hash(i + 1), u);
-            }
+            noise: (p) => Math.abs(Math.sin(p) * 43758.5453 % 1)
         };
 
-        // --- Init Scene ---
+        // --- Scenario Build ---
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x0a0a0b, 0.002);
+        scene.background = new THREE.Color(0xf5f7fa);
+        scene.fog = new THREE.Fog(0xf5f7fa, 500, 1500);
 
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 5000);
-        camera.position.set(0, 200, 600);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 5000);
+        camera.position.set(400, 300, 800);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.autoRotate = true;
-        controls.autoRotateSpeed = 0.2;
+        controls.autoRotateSpeed = 0.3;
 
-        // Post-Processing (Premium Bloom)
+        // Post-Processing
         const composer = new EffectComposer(renderer);
         composer.addPass(new RenderPass(scene, camera));
-        const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.8, 0.4, 0.95);
-        bloom.threshold = 0.5; bloom.strength = 0.6; bloom.radius = 1;
+        const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.4, 0.4, 0.9);
         composer.addPass(bloom);
 
-        // Env
-        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-        const spot = new THREE.PointLight(0xffffff, 500000);
-        spot.position.set(200, 500, 200);
-        scene.add(spot);
+        // Advanced Lighting
+        scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+        const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+        sun.position.set(500, 1000, 500);
+        sun.castShadow = true;
+        scene.add(sun);
 
-        // Ethereal Starfield
-        const starGeo = new THREE.BufferGeometry();
-        const starPos = new Float32Array(5000 * 3);
-        for (let i = 0; i < 5000 * 3; i++) starPos[i] = (Math.random() - 0.5) * 4000;
-        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-        const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 1, transparent: true, opacity: 0.1 });
-        scene.add(new THREE.Points(starGeo, starMat));
+        const rim = new THREE.PointLight(0xb08d57, 10, 2000);
+        rim.position.set(-500, 200, -500);
+        scene.add(rim);
+
+        // Ground Structure
+        const wallGeo = new THREE.CylinderGeometry(1000, 1000, 2, 64);
+        const wallMat = new THREE.MeshPhongMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+        const ground = new THREE.Mesh(wallGeo, wallMat);
+        ground.position.y = -200;
+        scene.add(ground);
 
         const meshGroup = new THREE.Group();
         scene.add(meshGroup);
@@ -341,27 +342,34 @@
         const startTime = Date.now();
         let lastFrame = performance.now();
 
-        function createZenNode(st) {
+        function createLumeNode(pm) {
             const group = new THREE.Group();
 
-            const mat = new THREE.MeshPhongMaterial({
-                color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.2,
-                transparent: true, opacity: 0.4, shininess: 100
+            // Sculptural Orb
+            const mat = new THREE.MeshStandardMaterial({
+                color: 0xffffff, metalness: 0.1, roughness: 0.1,
+                transparent: true, opacity: 0.8
             });
 
-            const sphere = new THREE.Mesh(new THREE.SphereGeometry(6, 32, 32), mat);
-            const ring = new THREE.Mesh(new THREE.TorusGeometry(12, 0.1, 16, 100), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.05 }));
+            const sphere = new THREE.Mesh(new THREE.SphereGeometry(8, 64, 64), mat);
+            sphere.castShadow = true;
+
+            // Halo Ring
+            const ring = new THREE.Mesh(
+                new THREE.TorusGeometry(18, 0.2, 16, 128),
+                new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.05 })
+            );
             ring.rotation.x = Math.PI / 2;
 
             group.add(sphere, ring);
-            group.position.set((Math.random() - 0.5) * 1200, (Math.random() - 0.5) * 400, (Math.random() - 0.5) * 1000);
+            group.position.set((Math.random() - 0.5) * 1500, (Math.random() - 0.5) * 400, (Math.random() - 0.5) * 1200);
             scene.add(group);
             return group;
         }
 
         const client = mqtt.connect('wss://dustboy-wss-bridge.laris.workers.dev/mqtt');
         client.on('connect', () => {
-            setTimeout(() => { document.getElementById('loading').style.opacity = '0'; setTimeout(() => document.getElementById('loading').style.display = 'none', 1000); }, 2000);
+            setTimeout(() => { document.getElementById('loading').style.opacity = '0'; setTimeout(() => document.getElementById('loading').style.display = 'none', 1500); }, 2500);
             client.subscribe('DUSTBOY/+/+/+/status');
         });
 
@@ -376,7 +384,7 @@
                 if (!stations.has(topic)) {
                     stations.set(topic, {
                         name, targetPM: pm, currentPM: pm,
-                        node: createZenNode(pm), noiseOff: Math.random() * 1000
+                        node: createLumeNode(pm), offset: Math.random() * 5000
                     });
                 } else {
                     stations.get(topic).targetPM = pm;
@@ -395,8 +403,7 @@
                 if (st.currentPM > max) max = st.currentPM;
                 const row = document.createElement('div');
                 row.className = 'device-row';
-                const opacity = Math.min(1, st.currentPM / 100) * 0.8 + 0.2;
-                row.innerHTML = `<span>${st.name}</span><span style="opacity:${opacity}">${st.currentPM.toFixed(1)}</span>`;
+                row.innerHTML = `<span>${st.name}</span><span style="font-weight:600; opacity:0.8">${st.currentPM.toFixed(1)}</span>`;
                 list.appendChild(row);
             });
 
@@ -404,19 +411,19 @@
             document.getElementById('avg-pm').innerText = avg.toFixed(1);
             document.getElementById('total-st').innerText = stations.size;
             document.getElementById('max-pm').innerText = max.toFixed(1);
-            updateLuxChart(avg);
+            updateLumeChart(avg);
         }
 
         // --- Chart ---
-        const luxChart = new Chart(document.getElementById('luxChart'), {
+        const lumeChart = new Chart(document.getElementById('lumeChart'), {
             type: 'line',
-            data: { labels: [], datasets: [{ data: [], borderColor: '#c5a059', borderWeight: 1, tension: 0.5, pointRadius: 0, fill: false }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: false }, scales: { x: { display: false }, y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { display: false } } } }
+            data: { labels: [], datasets: [{ data: [], borderColor: '#b08d57', borderWidth: 1.5, tension: 0.5, pointRadius: 0, fill: false }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: false }, scales: { x: { display: false }, y: { grid: { color: 'rgba(0,0,0,0.03)' }, ticks: { font: { size: 9 }, color: '#aaa', display: false } } } }
         });
-        function updateLuxChart(val) {
-            if (luxChart.data.labels.length > 50) { luxChart.data.labels.shift(); luxChart.data.datasets[0].data.shift(); }
-            luxChart.data.labels.push(''); luxChart.data.datasets[0].data.push(val);
-            luxChart.update('none');
+        function updateLumeChart(val) {
+            if (lumeChart.data.labels.length > 60) { lumeChart.data.labels.shift(); lumeChart.data.datasets[0].data.shift(); }
+            lumeChart.data.labels.push(''); lumeChart.data.datasets[0].data.push(val);
+            lumeChart.update('none');
         }
 
         // --- Animate ---
@@ -430,32 +437,34 @@
             controls.update();
 
             stations.forEach(st => {
-                st.currentPM = Zen.expStep(st.currentPM, st.targetPM, 1.5, dt);
+                st.currentPM = Lume.expStep(st.currentPM, st.targetPM, 1, dt);
 
-                // Organic Movement
-                st.node.position.y += Math.sin(time + st.noiseOff) * 0.2;
-                st.node.position.x += Math.cos(time * 0.5 + st.noiseOff) * 0.1;
+                // Float
+                st.node.position.y += Math.sin(time * 0.5 + st.offset) * 0.15;
 
-                // Luxury Visuals
+                // Advanced Color Dynamics (Ethereal Neutral)
                 const p = Math.min(1, st.currentPM / 100);
-                const color = new THREE.Color().setHSL(0.55 - p * 0.5, 0.8, 0.6); // Cyan to Purple
-                st.node.children[0].material.color.lerp(color, 0.05);
-                st.node.children[0].material.emissive.lerp(color, 0.05);
-                st.node.children[0].material.emissiveIntensity = p * 0.5 + 0.1;
+                const baseColor = new THREE.Color(0xffffff);
+                const dangerColor = new THREE.Color(0xb08d57); // Warm Gold for alert
+                baseColor.lerp(dangerColor, p);
 
-                const s = 0.8 + (st.currentPM / 80);
-                st.node.scale.set(s, s, s);
+                st.node.children[0].material.color.lerp(baseColor, 0.05);
+                st.node.children[0].material.emissive.set(baseColor);
+                st.node.children[0].material.emissiveIntensity = p * 0.3;
+
+                const s = 1 + (st.currentPM / 120);
+                st.node.scale.lerp(new THREE.Vector3(s, s, s), 0.05);
             });
 
-            // Subtle Connections
+            // Sculptural Connectivity
             meshGroup.clear();
             const arr = Array.from(stations.values());
             for (let i = 0; i < arr.length; i++) {
                 for (let j = i + 1; j < arr.length; j++) {
                     const d = arr[i].node.position.distanceTo(arr[j].node.position);
-                    if (d < 250) {
+                    if (d < 400) {
                         const geo = new THREE.BufferGeometry().setFromPoints([arr[i].node.position, arr[j].node.position]);
-                        const mat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: (1 - d / 250) * 0.03 });
+                        const mat = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: (1 - d / 400) * 0.03 });
                         meshGroup.add(new THREE.Line(geo, mat));
                     }
                 }
