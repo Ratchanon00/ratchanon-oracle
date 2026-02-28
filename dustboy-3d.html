@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DUSTBOY 3D | Neon Analytics Dashboard</title>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --neon-blue: #00f2ff;
+            --neon-pink: #ff00ea;
+            --bg-dark: #050505;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #ui-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            display: grid;
+            grid-template-columns: 350px 1fr 350px;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .panel {
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid var(--neon-blue);
+            border-radius: 15px;
+            padding: 20px;
+            pointer-events: auto;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.1);
+        }
+
+        .title {
+            color: var(--neon-blue);
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #222;
+            padding-bottom: 5px;
+        }
+
+        .value {
+            color: var(--neon-pink);
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        #status-indicator {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.8rem;
+        }
+
+        .blinker {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff3300;
+            animation: blink 1s infinite;
+        }
+
+        .blinker.online {
+            background: #00ff00;
+        }
+
+        @keyframes blink {
+            0% {
+                opacity: 0.2;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.2;
+            }
+        }
+
+        #legend {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            font-size: 0.8rem;
+        }
+
+        .leg-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        #loading {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-dark);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loader {
+            border: 4px solid #111;
+            border-top: 4px solid var(--neon-blue);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 2s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loading">
+        <div class="loader"></div>
+        <div>🛰️ CONNECTING TO SATELLITE NETWORK...</div>
+    </div>
+
+    <div id="status-indicator">
+        <div id="mqtt-dot" class="blinker"></div>
+        <span id="mqtt-status">MQTT OFFLINE</span>
+    </div>
+
+    <div id="ui-overlay">
+        <div class="panel">
+            <div class="title">📡 ACTIVE SENSORS</div>
+            <div id="device-list" style="max-height: 400px; overflow-y: auto;">
+                <div style="opacity:0.5; text-align:center;">SCANNING TOPICS...</div>
+            </div>
+            <div style="margin-top:20px; height: 200px;">
+                <canvas id="miniChart"></canvas>
+            </div>
+        </div>
+
+        <div></div>
+
+        <div class="panel">
+            <div class="title">📊 ANALYTICS CORE</div>
+            <div class="data-row"><span>Total Stations:</span> <span id="total-st" class="value">0</span></div>
+            <div class="data-row"><span>Avg PM2.5:</span> <span id="avg-pm" class="value">0.0</span></div>
+            <div class="data-row"><span>Highest PM2.5:</span> <span id="max-pm" class="value">0.0</span></div>
+
+            <div id="max-st-name"
+                style="font-size: 11px; color: var(--neon-pink); text-align: right; margin-top: -5px;">-</div>
+
+            <div style="margin-top:30px;">
+                <div class="title">🪐 GLOBAL DATA LOG</div>
+                <div id="log-box"
+                    style="font-size: 10px; font-family: monospace; color: #aaa; max-height: 300px; overflow-y: hidden;">
+                    - Await encryption key...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="legend">
+        <div class="leg-item">
+            <div class="dot" style="background:#3fb950"></div> GOOD (0-25)
+        </div>
+        <div class="leg-item">
+            <div class="dot" style="background:#fbbf24"></div> MODERATE (26-50)
+        </div>
+        <div class="leg-item">
+            <div class="dot" style="background:#f87171"></div> UNHEALTHY (51-100)
+        </div>
+        <div class="leg-item">
+            <div class="dot" style="background:#c084fc"></div> HAZARDOUS (>100)
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const MQTT_URL = 'wss://dustboy-wss-bridge.laris.workers.dev/mqtt';
+        const TOPIC = 'DUSTBOY/+/+/+/status';
+
+        const stations = new Map();
+        let totalPM = 0;
+        let countPM = 0;
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x050505);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(20, 30, 80);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.5;
+
+        const grid = new THREE.GridHelper(200, 40, 0x111111, 0x111111);
+        grid.position.y = -20;
+        scene.add(grid);
+
+        scene.add(new THREE.AmbientLight(0x404040, 2));
+        const pLight = new THREE.PointLight(0x00f2ff, 100, 200);
+        pLight.position.set(0, 50, 0);
+        scene.add(pLight);
+
+        const particleCount = 1000;
+        const positions = new Float32Array(particleCount * 3);
+        for (let i = 0; i < particleCount * 3; i++) positions[i] = (Math.random() - 0.5) * 300;
+        const partGeo = new THREE.BufferGeometry();
+        partGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const partMat = new THREE.PointsMaterial({ color: 0x00f2ff, size: 0.5, transparent: true, opacity: 0.3 });
+        const particles = new THREE.Points(partGeo, partMat);
+        scene.add(particles);
+
+        const chartCtx = document.getElementById('miniChart').getContext('2d');
+        const miniChart = new Chart(chartCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Avg PM2.5',
+                    data: [],
+                    borderColor: '#00f2ff',
+                    backgroundColor: 'rgba(0, 242, 255, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 2,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { display: false },
+                    y: { grid: { color: '#222' }, ticks: { color: '#666', font: { size: 9 } } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // --- Parsing Engine (Updated based on User Code) ---
+        function parseDustBoy(topic, raw) {
+            try {
+                const obj = JSON.parse(raw);
+                const parts = topic.split('/');
+                const isModelT = parts[1] === 'Model-T';
+
+                let pm25, pm10, temp, humid, name;
+                if (isModelT) {
+                    pm25 = obj.pm2_5; pm10 = obj.pm10;
+                    temp = obj.temp; humid = obj.humid;
+                    name = obj.nickname || parts[2];
+                } else {
+                    const d = obj.d || obj;
+                    pm25 = d.pm2_5; pm10 = d.pm10;
+                    temp = d.temperature_c; humid = d.humidity_rh;
+                    name = d.myName || parts[3];
+                }
+                return { name, pm25, pm10, temp, humid };
+            } catch (e) { return null; }
+        }
+
+        function getPMColor(pm25) {
+            if (pm25 <= 25) return 0x3fb950;  // Good (Green)
+            if (pm25 <= 50) return 0xfbbf24;  // Moderate (Yellow)
+            if (pm25 <= 100) return 0xf87171;  // Unhealthy (Red)
+            return 0xc084fc;                  // Hazardous (Purple)
+        }
+
+        function updateStats() {
+            let maxVal = -1; let maxName = '';
+            totalPM = 0; countPM = 0;
+
+            stations.forEach((data, id) => {
+                const pm = parseFloat(data.pm25);
+                totalPM += pm;
+                countPM++;
+                if (pm > maxVal) { maxVal = pm; maxName = data.name || id; }
+            });
+
+            const avg = countPM > 0 ? (totalPM / countPM).toFixed(1) : 0;
+            document.getElementById('total-st').innerText = countPM;
+            document.getElementById('avg-pm').innerText = avg;
+            document.getElementById('max-pm').innerText = maxVal >= 0 ? maxVal.toFixed(1) : '0.0';
+            document.getElementById('max-st-name').innerText = maxName;
+
+            if (miniChart.data.labels.length > 30) {
+                miniChart.data.labels.shift();
+                miniChart.data.datasets[0].data.shift();
+            }
+            miniChart.data.labels.push('');
+            miniChart.data.datasets[0].data.push(avg);
+            miniChart.update();
+        }
+
+        function createNode(id, pm) {
+            const group = new THREE.Group();
+            const color = getPMColor(pm);
+            const geo = new THREE.IcosahedronGeometry(2, 0);
+            const mat = new THREE.MeshPhongMaterial({
+                color: color,
+                emissive: color,
+                emissiveIntensity: 0.5,
+                flatShading: true
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            const wire = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.1 }));
+            wire.scale.setScalar(1.2);
+            group.add(mesh, wire);
+            group.position.set((Math.random() - 0.5) * 120, (Math.random() - 0.5) * 60, (Math.random() - 0.5) * 100);
+            scene.add(group);
+            return group;
+        }
+
+        const client = mqtt.connect(MQTT_URL);
+
+        client.on('connect', () => {
+            document.getElementById('mqtt-dot').classList.add('online');
+            document.getElementById('mqtt-status').innerText = 'LINK ESTABLISHED';
+            client.subscribe(TOPIC);
+            document.getElementById('loading').style.display = 'none';
+        });
+
+        client.on('message', (topic, message) => {
+            const sensorData = parseDustBoy(topic, message.toString());
+            if (!sensorData) return;
+
+            const id = topic;
+            if (!stations.has(id)) {
+                stations.set(id, { ...sensorData, node: createNode(id, sensorData.pm25) });
+                renderStationList();
+            } else {
+                const st = stations.get(id);
+                Object.assign(st, sensorData);
+                const color = getPMColor(sensorData.pm25);
+                st.node.children[0].material.color.setHex(color);
+                st.node.children[0].material.emissive.setHex(color);
+            }
+
+            logMessage(`SYNC: ${sensorData.name} | PM2.5: ${sensorData.pm25} | T: ${sensorData.temp}°C`);
+            updateStats();
+        });
+
+        function renderStationList() {
+            const list = document.getElementById('device-list');
+            list.innerHTML = '';
+            stations.forEach((st, id) => {
+                const div = document.createElement('div');
+                div.className = 'data-row';
+                const colorHex = getPMColor(st.pm25).toString(16).padStart(6, '0');
+                div.innerHTML = `
+                    <div style="flex:1">
+                        <div style="font-weight:bold; color:var(--neon-blue)">${st.name}</div>
+                        <div style="font-size:10px; opacity:0.6">T: ${st.temp}°C | H: ${st.humid}%</div>
+                    </div>
+                    <span class="value" style="color: #${colorHex}">${st.pm25}</span>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function logMessage(msg) {
+            const box = document.getElementById('log-box');
+            box.innerText = `> ${msg}\n${box.innerText}`.split('\n').slice(0, 10).join('\n');
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            stations.forEach(st => {
+                st.node.rotation.y += 0.01;
+                st.node.rotation.x += 0.005;
+                const pm = parseFloat(st.pm25);
+                const scale = 1 + (pm / 100);
+                st.node.scale.setScalar(THREE.MathUtils.lerp(st.node.scale.x, scale, 0.1));
+            });
+            particles.rotation.y += 0.001;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+
+</html>

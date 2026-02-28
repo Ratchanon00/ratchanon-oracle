@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS Travel Map: Chiang Mai to Phitsanulok</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: #1a1a1a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #eee;
+        }
+
+        #map {
+            width: 100%;
+            height: calc(100% - 60px);
+        }
+
+        footer {
+            height: 60px;
+            background-color: #111;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            border-top: 1px solid #333;
+        }
+
+        .oracle-name {
+            color: #00d2ff;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .leaflet-popup-content-wrapper {
+            background: #222;
+            color: #fff;
+            border-radius: 8px;
+        }
+
+        .leaflet-popup-tip {
+            background: #222;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="map"></div>
+
+    <footer>
+        สร้างโดย <span class="oracle-name">BOB (บ๊อบ) — 🔮 ปัญญาประดิษฐ์เพื่อการเชื่อมโยง</span>
+    </footer>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script>
+        // ข้อมูล CSV (ล้าง backslash ออกแล้ว)
+        const csvData = `device,model,battery,charging,lat,lon,accuracy,source,place,place_type,locality,address,updated
+Nat iPhone12mini,iPhone 12 mini,80,NotCharging,18.464717,99.05675,5,GPS,,,Mueang Lamphun District,"Mueang Lamphun District, Lamphun 51000",2026-02-27 08:04:17
+Nat iPhone12mini,iPhone 12 mini,80,NotCharging,18.456181,99.057669,14,GPS,,,Mueang Lamphun District,"Mueang Lamphun District, Lamphun 51000",2026-02-27 08:09:47
+Nat iPhone12mini,iPhone 12 mini,78,NotCharging,18.456107,99.087873,15,GPS,,,Mae Tha District,"Mae Tha District, Lamphun 51140",2026-02-27 08:14:32
+Nat iPhone12mini,iPhone 12 mini,77,NotCharging,18.461019,99.137354,14,GPS,,,Mae Tha District,"Mae Tha District, Lamphun 51140",2026-02-27 08:18:36
+Nat iPhone12mini,iPhone 12 mini,69,NotCharging,18.392756,99.265662,51,GPS,,,Hang Chat District,"Hang Chat District, Lampang 52190",2026-02-27 09:01:45
+Nat iPhone12mini,iPhone 12 mini,67,NotCharging,18.364852,99.287066,23,GPS,,,Hang Chat District,"Hang Chat District, Lampang 52190",2026-02-27 09:07:09
+Nat iPhone12mini,iPhone 12 mini,67,NotCharging,18.37956,99.305078,9,GPS,,,Hang Chat District,"Hang Chat District, Lampang 52190",2026-02-27 09:11:23
+Nat iPhone12mini,iPhone 12 mini,64,NotCharging,18.312283,99.413179,6,GPS,,,Mueang Lampang District,"Mueang Lampang District, Lampang 52100",2026-02-27 09:22:15
+Nat iPhone12mini,iPhone 12 mini,63,NotCharging,18.281088,99.469882,8,GPS,,,Mueang Lampang District,"107 Rotfai Road, Sop Tui, Mueang Lampang District, Lampang 52100",2026-02-27 09:27:25
+Nat iPhone12mini,iPhone 12 mini,62,NotCharging,18.275846,99.47753,5,GPS,,,Mueang Lampang District,"Mueang Lampang District, Lampang 52100",2026-02-27 09:32:24
+Nat iPhone12mini,iPhone 12 mini,61,NotCharging,18.223882,99.515192,10,GPS,,,Mueang Lampang District,"Mueang Lampang District, Lampang 52000",2026-02-27 09:37:48
+Nat iPhone12mini,iPhone 12 mini,58,NotCharging,18.240787,99.596923,5,GPS,,,Mueang Lampang District,"Mueang Lampang District, Lampang 52000",2026-02-27 09:48:13
+Nat iPhone12mini,iPhone 12 mini,57,NotCharging,18.256232,99.655373,14,GPS,,,Mae Mo District,"84 Moo 5, Mae Mo, Mae Mo District, Lampang 52220",2026-02-27 09:53:39
+Nat iPhone12mini,iPhone 12 mini,55,NotCharging,18.264667,99.709782,5,GPS,,,Mae Mo District,"62 Soi Pracha Rat, Mae Mo, Mae Mo District, Lampang 52220",2026-02-27 09:58:27
+Nat iPhone12mini,iPhone 12 mini,54,NotCharging,18.277847,99.801018,8,GPS,,,Mae Mo District,"Mae Mo District, Lampang 52220",2026-02-27 10:06:25
+Nat iPhone12mini,iPhone 12 mini,49,NotCharging,18.211666,99.871989,5,GPS,,,Long District,"76 Rural Highway 4003, Ban Pin, Long District, Phrae 54150",2026-02-27 10:29:32
+Nat iPhone12mini,iPhone 12 mini,48,NotCharging,18.194947,99.870168,26,GPS,,,Long District,"Long District, Phrae 54150",2026-02-27 10:32:30
+Nat iPhone12mini,iPhone 12 mini,46,NotCharging,18.096358,99.866883,2,GPS,,,Long District,"203 Thetsaban 2 Road, Ban Pin, Long District, Phrae 54150",2026-02-27 10:49:41
+Nat iPhone12mini,iPhone 12 mini,45,NotCharging,18.096305,99.866846,9,GPS,,,Long District,"203 Thetsaban 2 Road, Ban Pin, Long District, Phrae 54150",2026-02-27 10:55:13
+Nat iPhone12mini,iPhone 12 mini,44,NotCharging,18.080372,99.879712,16,GPS,,,Long District,"Long District, Phrae 54150",2026-02-27 10:59:32
+Nat iPhone12mini,iPhone 12 mini,42,NotCharging,18.040347,99.916938,60,GPS,,,Long District,"Long District, Phrae 54150",2026-02-27 11:09:52
+Nat iPhone12mini,iPhone 12 mini,41,NotCharging,18.032004,99.922519,36,GPS,,,Long District,"Long District, Phrae 54150",2026-02-27 11:11:34
+Nat iPhone12mini,iPhone 12 mini,38,NotCharging,17.97274,100.052057,14,GPS,,,Den Chai District,"Den Chai District, Phrae 54110",2026-02-27 11:31:00
+Nat iPhone12mini,iPhone 12 mini,36,NotCharging,17.92115,100.062211,10,GPS,,,Den Chai District,"Den Chai District, Phrae 54110",2026-02-27 11:36:34
+Nat iPhone12mini,iPhone 12 mini,35,NotCharging,17.881632,100.040743,6,GPS,,,Den Chai District,"Den Chai District, Phrae 54110",2026-02-27 11:41:39
+Nat iPhone12mini,iPhone 12 mini,34,NotCharging,17.839016,100.046134,14,GPS,,,Mueang Uttaradit District,"Mueang Uttaradit District, Uttaradit 53000",2026-02-27 11:47:01
+Nat iPhone12mini,iPhone 12 mini,33,NotCharging,17.808954,100.066603,5,GPS,,,Mueang Uttaradit District,"Mueang Uttaradit District, Uttaradit 53000",2026-02-27 11:51:54
+Nat iPhone12mini,iPhone 12 mini,32,NotCharging,17.77201,100.108,5,GPS,,,Mueang Uttaradit District,"169 Ro Pho Cho. Uttaradit 4013 Road, Ban Dan Na Kham, Mueang Uttaradit District, Uttaradit 53000",2026-02-27 11:57:12
+Nat iPhone12mini,iPhone 12 mini,31,NotCharging,17.723428,100.126752,14,GPS,,,Mueang Uttaradit District,"33–99 Thanon Phatthanakan Soi 13, Ban Dan Na Kham, Mueang Uttaradit District, Uttaradit 53000",2026-02-27 12:02:22
+Nat iPhone12mini,iPhone 12 mini,30,NotCharging,17.652857,100.122463,5,GPS,,,Mueang Uttaradit District,"Pracha Ruam Chai Road, Tha Sao, Mueang Uttaradit District, Uttaradit 53000",2026-02-27 12:07:28
+Nat iPhone12mini,iPhone 12 mini,28,NotCharging,17.620929,100.097137,14,GPS,,,Mueang Uttaradit District,"1/47 Boromma At Road, Tha It, Mueang Uttaradit District, Uttaradit 53000",2026-02-27 12:17:39
+Nat iPhone12mini,iPhone 12 mini,27,NotCharging,17.594402,100.093817,6,GPS,,,Mueang Uttaradit District,"242 Ban Nong Khan Road, Ban Ko, Mueang Uttaradit District, Uttaradit 53000",2026-02-27 12:23:17
+Nat iPhone12mini,iPhone 12 mini,1,Charging,16.817458,100.25806,60,GPS,,,Mueang Phitsanulok District,"Phibun Songkhram Rajabhat University, Nai Mueang, Mueang Phitsanulok District, Phitsanulok 65000",2026-02-27 16:23:02
+Nat iPhone12mini,iPhone 12 mini,1,Charging,16.816864,100.258006,10,GPS,,,Mueang Phitsanulok District,"Pibulsongkram Rajabhat University, Nai Mueang, Mueang Phitsanulok District, Phitsanulok 65000",2026-02-27 16:28:33
+Nat iPhone12mini,iPhone 12 mini,4,Charging,16.81687,100.258008,10,unknown,,,Mueang Phitsanulok District,"Pibulsongkram Rajabhat University, Nai Mueang, Mueang Phitsanulok District, Phitsanulok 65000",2026-02-27 16:43:35
+Nat iPhone12mini,iPhone 12 mini,11,Charging,16.816871,100.258008,10,unknown,,,Mueang Phitsanulok District,"Pibulsongkram Rajabhat University, Nai Mueang, Mueang Phitsanulok District, Phitsanulok 65000",2026-02-27 16:49:04
+Nat iPhone12mini,iPhone 12 mini,15,Charging,16.816907,100.258004,10,GPS,,,Mueang Phitsanulok District,"Pibulsongkram Rajabhat University, Nai Mueang, Mueang Phitsanulok District, Phitsanulok 65000",2026-02-27 16:53:51
+Nat iPhone12mini,iPhone 12 mini,40,Charging,16.816956,100.258004,10,unknown,,,Mueang Phitsanulok District,"Pibulsongkram Rajabhat University, 66 Wang Chan Road, Nai Mueang, Mueang Phitsanulok District, Phitsanulok 65000",2026-02-27 17:30:17
+Nat iPhone12mini,iPhone 12 mini,45,NotCharging,16.81693,100.258031,15,GPS,,,Mueang Phitsanulok District,"Pibulsongkram Rajabhat University, Nai Mueang, Mueang Phitsanulok District, Phitsanulok 65000",2026-02-27 17:50:55
+Nat iPhone12mini,iPhone 12 mini,43,NotCharging,16.817666,100.258349,8,GPS,,,Mueang Phitsanulok District,"66 Wang Chan Road, Nai Mueang, Mueang Phitsanulok District, Phitsanulok 65000",2026-02-27 17:55:38
+Nat iPhone12mini,iPhone 12 mini,1,NotCharging,16.818115,100.258121,4,GPS,,,Mueang Phitsanulok District,"66 Wang Chan Road, Nai Mueang, Mueang Phitsanulok District, Phitsanulok 65000",2026-02-27 18:07:27
+Nat iPhone12mini,iPhone 12 mini,1,NotCharging,16.817928,100.25823,4,GPS,,,Mueang Phitsanulok District,"66 Wang Chan Road, Nai Mueang, Mueang Phitsanulok District, Phitsanulok 65000",2026-02-27 18:17:22
+Nat iPhone12mini,iPhone 12 mini,1,NotCharging,16.816055,100.256881,4,GPS,,,Mueang Phitsanulok District,"80/71 Pracha Uthit Road, Nai Mueang, Mueang Phitsanulok District, Phitsanulok 65000",2026-02-27 18:22:35
+Nat iPhone12mini,iPhone 12 mini,1,NotCharging,16.813947,100.263612,8,GPS,,,Mueang Phitsanulok District,"30 Chaophraya Road, Nai Mueang, Mueang Phitsanulok District, Phitsanulok 65000",2026-02-27 18:27:44
+Nat iPhone12mini,iPhone 12 mini,1,NotCharging,16.813897,100.263608,5,GPS,,,Mueang Phitsanulok District,"30 Chaophraya Road, Nai Mueang, Mueang Phitsanulok District, Phitsanulok 65000",2026-02-27 18:33:01`;
+
+        // Initialize Map
+        const map = L.map('map').setView([17.6, 100.1], 7);
+
+        // Dark Theme Layer
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+
+        // Robust CSV Parser
+        function parseCSV(text) {
+            const rows = [];
+            const lines = text.trim().split('\n');
+            for (let line of lines) {
+                const parts = [];
+                let current = '';
+                let inQuotes = false;
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"' && line[i + 1] === '"') {
+                        current += '"'; i++;
+                    } else if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        parts.push(current);
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                parts.push(current);
+                rows.push(parts);
+            }
+            return rows;
+        }
+
+        const allRows = parseCSV(csvData);
+        const latLngs = [];
+
+        for (let i = 1; i < allRows.length; i++) {
+            const row = allRows[i];
+            if (row.length < 12) continue;
+
+            const data = {
+                lat: parseFloat(row[4]),
+                lon: parseFloat(row[5]),
+                battery: row[2],
+                locality: row[10],
+                address: row[11],
+                time: row[12]
+            };
+
+            if (!isNaN(data.lat) && !isNaN(data.lon)) {
+                latLngs.push([data.lat, data.lon]);
+
+                const marker = L.circleMarker([data.lat, data.lon], {
+                    radius: 5,
+                    fillColor: "#00d2ff",
+                    color: "#fff",
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(map);
+
+                marker.bindPopup(`
+                    <div style="font-size: 14px;">
+                        <b style="color: #00d2ff;">📍 ${data.address || data.locality || 'ระบุตำแหน่ง'}</b><br>
+                        <hr style="border: 0; border-top: 1px solid #444; margin: 8px 0;">
+                        🕒 <b>เวลา:</b> ${data.time}<br>
+                        🔋 <b>แบตเตอรี่:</b> ${data.battery}%
+                    </div>
+                `);
+            }
+        }
+
+        const polyline = L.polyline(latLngs, {
+            color: '#00d2ff',
+            weight: 3,
+            opacity: 0.6,
+            smoothFactor: 1
+        }).addTo(map);
+
+        if (latLngs.length > 0) {
+            map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+        }
+    </script>
+</body>
+
+</html>
