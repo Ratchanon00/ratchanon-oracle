@@ -4,52 +4,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DUSTBOY | LIVING HUD 2.0</title>
+    <title>DUSTBOY | ZEN FUTURISM 3.0</title>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@300;500;700&display=swap');
 
         :root {
-            --neon-blue: #00f2ff;
-            --neon-pink: #ff00ea;
-            --neon-green: #3fb950;
-            --bg-dark: #000210;
+            --bg-deep: #0a0a0b;
+            --accent-gold: #c5a059;
+            --accent-cyan: #00e5ff;
+            --text-main: #f8f9fa;
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-bg: rgba(255, 255, 255, 0.02);
         }
 
         body {
             margin: 0;
-            background-color: var(--bg-dark);
-            color: white;
-            font-family: 'Rajdhani', sans-serif;
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
             overflow: hidden;
-            text-transform: uppercase;
+            letter-spacing: -0.01em;
         }
 
         canvas {
             display: block;
-        }
-
-        /* Slanted Glass UI */
-        .hud-panel {
-            background: rgba(10, 20, 50, 0.7);
-            border: 1px solid var(--neon-blue);
-            backdrop-filter: blur(20px);
-            padding: 25px;
-            pointer-events: auto;
-            clip-path: polygon(0% 0%, 95% 0%, 100% 10%, 100% 100%, 5% 100%, 0% 90%);
-            box-shadow: 0 0 50px rgba(0, 242, 255, 0.1), inset 0 0 20px rgba(0, 242, 255, 0.2);
-            position: relative;
-        }
-
-        .hud-panel::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 60px;
-            height: 3px;
-            background: var(--neon-blue);
+            filter: contrast(110%) brightness(105%);
         }
 
         #ui-overlay {
@@ -59,8 +40,19 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 40px;
+            padding: 50px;
             z-index: 10;
+        }
+
+        .minimal-panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(25px);
+            padding: 30px;
+            pointer-events: auto;
+            border-radius: 20px;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
+            transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .header {
@@ -69,186 +61,207 @@
             align-items: flex-start;
         }
 
-        .title {
-            font-family: 'Orbitron', sans-serif;
-            color: var(--neon-blue);
-            font-size: 1.2rem;
-            margin-bottom: 15px;
-            letter-spacing: 4px;
-            text-shadow: 0 0 15px var(--neon-blue);
+        .brand {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            letter-spacing: 0.4em;
+            color: var(--accent-gold);
+            margin-bottom: 30px;
         }
 
-        .stat-grid {
+        .main-val-group {
+            margin-bottom: 40px;
+        }
+
+        .label {
+            font-size: 0.65rem;
+            opacity: 0.4;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .big-val {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3rem;
+            font-weight: 300;
+            line-height: 1;
+        }
+
+        .grid-stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .stat-box {
-            border-left: 2px solid var(--neon-pink);
-            padding-left: 15px;
-        }
-
-        .stat-label {
-            font-size: 0.7rem;
-            color: var(--neon-pink);
-            opacity: 0.7;
-        }
-
-        .stat-val {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.8rem;
-            font-weight: bold;
+            gap: 30px;
+            border-top: 1px solid var(--glass-border);
+            pt: 20px;
+            margin-top: 20px;
+            padding-top: 20px;
         }
 
         #device-list {
-            margin-top: 20px;
-            height: 300px;
+            margin-top: 30px;
+            height: 320px;
             overflow-y: auto;
             scrollbar-width: none;
-            mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+            mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
         }
 
         .device-row {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             padding: 12px 0;
-            border-bottom: 1px dotted rgba(0, 242, 255, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 0.8rem;
             transition: 0.3s;
-            cursor: pointer;
         }
 
         .device-row:hover {
-            color: var(--neon-blue);
-            transform: translateX(5px);
+            color: var(--accent-cyan);
         }
 
-        #log-console {
-            width: 500px;
-            height: 160px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(0, 242, 255, 0.2);
-            border-left: 4px solid #00ffaa;
-            padding: 15px;
-            font-family: monospace;
-            font-size: 11px;
-            color: #00ffaa;
-            overflow: hidden;
+        .status-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 12px;
+        }
+
+        #console-minimal {
+            font-family: 'Inter', sans-serif;
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.3);
+            max-width: 300px;
+            line-height: 1.6;
+        }
+
+        #nav-minimal {
+            display: flex;
+            gap: 40px;
             pointer-events: auto;
         }
 
-        .glitch-text {
-            animation: glitch 0.5s infinite alternate;
+        .nav-item {
+            color: rgba(255, 255, 255, 0.4);
+            text-decoration: none;
+            font-size: 0.7rem;
+            letter-spacing: 0.2em;
+            transition: 0.3s;
+            position: relative;
         }
 
-        @keyframes glitch {
-            0% {
-                text-shadow: 2px 0 var(--neon-pink);
-            }
-
-            100% {
-                text-shadow: -2px 0 var(--neon-blue);
-            }
+        .nav-item:hover,
+        .nav-item.active {
+            color: var(--text-main);
         }
 
-        .loading-screen {
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: var(--accent-gold);
+        }
+
+        .loading {
             position: fixed;
             inset: 0;
-            background: var(--bg-dark);
+            background: var(--bg-deep);
             z-index: 10000;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-family: 'Orbitron', sans-serif;
-            transition: 1s opacity;
+            transition: 1s ease-in-out;
         }
 
-        #nav-footer {
-            display: flex;
-            gap: 20px;
-            pointer-events: auto;
+        .loading-logo {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 300;
+            font-size: 1.5rem;
+            letter-spacing: 0.8em;
+            color: var(--accent-gold);
+            animation: pulse-luxury 2s infinite ease-in-out;
         }
 
-        .nav-link {
-            padding: 10px 20px;
-            border: 1px solid var(--neon-blue);
-            color: var(--neon-blue);
-            text-decoration: none;
-            font-size: 0.8rem;
-            background: rgba(0, 242, 255, 0.05);
-            backdrop-filter: blur(5px);
-            clip-path: polygon(0 0, 100% 0, 85% 100%, 15% 100%);
-            transition: 0.3s;
-        }
+        @keyframes pulse-luxury {
 
-        .nav-link:hover {
-            background: var(--neon-blue);
-            color: black;
-            box-shadow: 0 0 30px var(--neon-blue);
-        }
+            0%,
+            100% {
+                opacity: 0.3;
+                transform: scale(0.98);
+            }
 
-        .nav-link.active {
-            border-color: var(--neon-pink);
-            color: var(--neon-pink);
+            50% {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
     </style>
 </head>
 
 <body>
-    <div id="loading" class="loading-screen">
-        <div
-            style="width: 100px; height: 100px; border: 4px solid var(--neon-blue); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;">
-        </div>
-        <div style="margin-top: 30px; color: var(--neon-blue); letter-spacing: 10px;" class="glitch-text">SYNCING NEURAL
-            UPLINK...</div>
-        <div id="load-status" style="font-size: 10px; margin-top: 15px; opacity: 0.5;">INIT_V2.0_READY</div>
+    <div id="loading" class="loading">
+        <div class="loading-logo">DUSTBOY PRO</div>
+        <div style="font-size: 8px; margin-top: 20px; opacity: 0.3; letter-spacing: 2px;">CALIBRATING NEURAL
+            ARCHITECTURE</div>
     </div>
 
     <div id="ui-overlay">
         <div class="header">
-            <div class="hud-panel" style="width: 450px;">
-                <div class="title">NEURAL NETWORK // LIVE</div>
-                <div class="stat-grid">
+            <!-- Left Data Panel -->
+            <div class="minimal-panel" style="width: 380px;">
+                <div class="brand">SYSTEM STATUS</div>
+
+                <div class="main-val-group">
+                    <div class="label">Network Average PM2.5</div>
+                    <div id="avg-pm" class="big-val">0.0</div>
+                </div>
+
+                <div class="grid-stats">
                     <div class="stat-box">
-                        <div class="stat-label">ACTIVE NODES</div>
-                        <div id="total-st" class="stat-val">0</div>
+                        <div class="label">Active Nodes</div>
+                        <div id="total-st" style="font-size: 1.2rem; font-weight: 500;">0</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-label">NETWORK PM2.5 AVG</div>
-                        <div id="avg-pm" class="stat-val">0.0</div>
+                        <div class="label">Uptime</div>
+                        <div id="uptime" style="font-size: 1.2rem; font-weight: 500;">00:00:00</div>
                     </div>
                 </div>
+
                 <div id="device-list"></div>
             </div>
 
-            <div class="hud-panel" style="width: 400px; border-color: var(--neon-pink);">
-                <div class="title" style="color:var(--neon-pink)">CRITICAL_ALERT_SYS</div>
-                <div class="stat-grid">
-                    <div class="stat-box" style="border-color:var(--neon-pink)">
-                        <div class="stat-label">H-PEAK CONCENTRATION</div>
-                        <div id="max-pm" class="stat-val" style="color:var(--neon-pink)">0.0</div>
-                    </div>
-                    <div class="stat-box" style="border-color:var(--neon-pink)">
-                        <div class="stat-label">UPTIME_CLOCK</div>
-                        <div id="uptime" class="stat-val" style="font-size:1.3rem; margin-top:8px;">00:00:00</div>
-                    </div>
+            <!-- Right Analytics Panel -->
+            <div class="minimal-panel" style="width: 400px; padding: 40px;">
+                <div class="brand">PEAK ANALYTICS</div>
+
+                <div class="main-val-group">
+                    <div class="label">Highest Recorded</div>
+                    <div id="max-pm" class="big-val" style="color: var(--accent-gold);">0.0</div>
                 </div>
-                <div style="margin-top:25px; height:180px;">
-                    <canvas id="mainChart"></canvas>
+
+                <div style="margin-top: 40px; height: 180px;">
+                    <canvas id="luxChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-            <div id="log-console">
-                [SYSTEM] KLAK_MATH_ENGINE LOADED v2.0<br>
-                [WSS] WAITING_FOR_HANDSHAKE_BRDIGE...<br>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+            <div id="console-minimal">
+                [STORAGE] ZEN_CORE_V3_INITIATED<br>
+                [UPLINK] CONNECTED_TO_SECURE_WSS<br>
+                [MODE] MINIMALIST_PREMIUM_ACTIVE
             </div>
-            <div id="nav-footer">
-                <a href="index.html" class="nav-link">🌏 GROUND_MAP</a>
-                <a href="travel-3d.html" class="nav-link">🚂 NATURE_3D</a>
-                <a href="dustboy-3d.html" class="nav-link active">🛰️ LIVING_HUD</a>
+
+            <div id="nav-minimal">
+                <a href="index.html" class="nav-item">BASE MAP</a>
+                <a href="travel-3d.html" class="nav-item">ETHEREAL 3D</a>
+                <a href="dustboy-3d.html" class="nav-item active">ZEN DASHBOARD</a>
             </div>
         </div>
     </div>
@@ -269,113 +282,86 @@
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-        // --- KlakMath Inspired Utilities ---
-        const Klak = {
-            expStep: (current, target, speed, dt) => target + (current - target) * Math.exp(-speed * dt),
-
-            // Simple 1D Gradient Noise
-            noise1D: (p, seed = 42) => {
+        // --- Core Algorithm (Klak Inspired) ---
+        const Zen = {
+            lerp: (a, b, t) => a + (b - a) * t,
+            expStep: (c, t, s, dt) => t + (c - t) * Math.exp(-s * dt),
+            noise: (p) => {
                 const i = Math.floor(p);
                 const f = p - i;
                 const u = f * f * (3 - 2 * f);
-                const hash = (n) => Math.abs(Math.sin(n + seed) * 10000 % 1);
-                return (1 - u) * hash(i) + u * hash(i + 1);
+                const hash = (n) => Math.abs(Math.sin(n) * 43758.5453 % 1);
+                return Zen.lerp(hash(i), hash(i + 1), u);
             }
         };
 
-        // --- Application State ---
-        const stations = new Map();
-        const startTime = Date.now();
-        let lastFrameTime = performance.now();
-
-        // --- THREE.JS Initialization ---
+        // --- Init Scene ---
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 1, 5000);
-        camera.position.set(200, 150, 400);
+        scene.fog = new THREE.FogExp2(0x0a0a0b, 0.002);
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 5000);
+        camera.position.set(0, 200, 600);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         document.body.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.autoRotate = true;
-        controls.autoRotateSpeed = 0.5;
+        controls.autoRotateSpeed = 0.2;
 
-        // --- Post Processing (Bloom) ---
+        // Post-Processing (Premium Bloom)
         const composer = new EffectComposer(renderer);
         composer.addPass(new RenderPass(scene, camera));
-        const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.2, 0.4, 0.8);
-        bloom.threshold = 0.1; bloom.strength = 1.0; bloom.radius = 0.5;
+        const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.8, 0.4, 0.95);
+        bloom.threshold = 0.5; bloom.strength = 0.6; bloom.radius = 1;
         composer.addPass(bloom);
 
-        // --- Environment & Grid ---
-        const grid = new THREE.PolarGridHelper(800, 20, 10, 64, 0x00f2ff, 0x011a2a);
-        grid.position.y = -100;
-        grid.material.transparent = true;
-        grid.material.opacity = 0.1;
-        scene.add(grid);
+        // Env
+        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+        const spot = new THREE.PointLight(0xffffff, 500000);
+        spot.position.set(200, 500, 200);
+        scene.add(spot);
 
-        const light = new THREE.DirectionalLight(0xffffff, 2.5);
-        light.position.set(500, 500, 500);
-        scene.add(light);
-        scene.add(new THREE.AmbientLight(0x0a1a3a, 2));
+        // Ethereal Starfield
+        const starGeo = new THREE.BufferGeometry();
+        const starPos = new Float32Array(5000 * 3);
+        for (let i = 0; i < 5000 * 3; i++) starPos[i] = (Math.random() - 0.5) * 4000;
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 1, transparent: true, opacity: 0.1 });
+        scene.add(new THREE.Points(starGeo, starMat));
 
-        // Background Particles
-        const partGeo = new THREE.BufferGeometry();
-        const partPos = new Float32Array(3000 * 3);
-        for (let i = 0; i < 3000 * 3; i++) partPos[i] = (Math.random() - 0.5) * 2000;
-        partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3));
-        const partMat = new THREE.PointsMaterial({ color: 0x00f2ff, size: 2, transparent: true, opacity: 0.3 });
-        scene.add(new THREE.Points(partGeo, partMat));
-
-        // Neural Mesh Group
         const meshGroup = new THREE.Group();
         scene.add(meshGroup);
 
-        // --- Node Creation (Futuristic Design) ---
-        function createLivingNode(st) {
+        // --- Data Logic ---
+        const stations = new Map();
+        const startTime = Date.now();
+        let lastFrame = performance.now();
+
+        function createZenNode(st) {
             const group = new THREE.Group();
 
-            // Fractal Core (Octahedron)
-            const coreGeo = new THREE.OctahedronGeometry(5, 0);
-            const coreMat = new THREE.MeshPhongMaterial({
-                color: 0x00f2ff, emissive: 0x00f2ff, emissiveIntensity: 2,
-                transparent: true, opacity: 0.8
+            const mat = new THREE.MeshPhongMaterial({
+                color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.2,
+                transparent: true, opacity: 0.4, shininess: 100
             });
-            const core = new THREE.Mesh(coreGeo, coreMat);
 
-            // Rotating Holographic Rings
-            const ringGeo = new THREE.TorusGeometry(12, 0.2, 8, 48);
-            const ringMat = new THREE.MeshBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.2 });
-            const ring1 = new THREE.Mesh(ringGeo, ringMat);
-            const ring2 = new THREE.Mesh(ringGeo, ringMat);
-            ring2.rotation.x = Math.PI / 2;
+            const sphere = new THREE.Mesh(new THREE.SphereGeometry(6, 32, 32), mat);
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(12, 0.1, 16, 100), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.05 }));
+            ring.rotation.x = Math.PI / 2;
 
-            // Outer Data Shield
-            const shieldGeo = new THREE.DodecahedronGeometry(15, 0);
-            const shieldMat = new THREE.MeshBasicMaterial({ color: 0x00f2ff, wireframe: true, transparent: true, opacity: 0.05 });
-            const shield = new THREE.Mesh(shieldGeo, shieldMat);
-
-            group.add(core, ring1, ring2, shield);
-            group.position.set((Math.random() - 0.5) * 1000, (Math.random() - 0.5) * 400, (Math.random() - 0.5) * 800);
+            group.add(sphere, ring);
+            group.position.set((Math.random() - 0.5) * 1200, (Math.random() - 0.5) * 400, (Math.random() - 0.5) * 1000);
             scene.add(group);
             return group;
         }
 
-        function getPMColorHex(pm) {
-            if (pm <= 25) return 0x3fb950;
-            if (pm <= 50) return 0xfbbf24;
-            if (pm <= 100) return 0xf87171;
-            return 0xc084fc;
-        }
-
-        // --- MQTT Data Logic ---
         const client = mqtt.connect('wss://dustboy-wss-bridge.laris.workers.dev/mqtt');
         client.on('connect', () => {
-            document.getElementById('load-status').innerText = 'NEURAL_LINK_STABLE';
-            setTimeout(() => { document.getElementById('loading').style.opacity = '0'; setTimeout(() => document.getElementById('loading').style.display = 'none', 1000); }, 1500);
+            setTimeout(() => { document.getElementById('loading').style.opacity = '0'; setTimeout(() => document.getElementById('loading').style.display = 'none', 1000); }, 2000);
             client.subscribe('DUSTBOY/+/+/+/status');
         });
 
@@ -390,18 +376,15 @@
                 if (!stations.has(topic)) {
                     stations.set(topic, {
                         name, targetPM: pm, currentPM: pm,
-                        node: createLivingNode({ pm25: pm, name }),
-                        noiseOffset: Math.random() * 1000
+                        node: createZenNode(pm), noiseOff: Math.random() * 1000
                     });
                 } else {
                     stations.get(topic).targetPM = pm;
                 }
                 updateUI();
-                logStream(`[${name.toUpperCase()}] RECV_DATAPOINT: ${pm}`);
             } catch (e) { }
         });
 
-        // --- HUD Functions ---
         function updateUI() {
             let total = 0, max = 0;
             const list = document.getElementById('device-list');
@@ -410,98 +393,69 @@
             stations.forEach(st => {
                 total += st.currentPM;
                 if (st.currentPM > max) max = st.currentPM;
-
-                const color = '#' + getPMColorHex(st.currentPM).toString(16).padStart(6, '0');
                 const row = document.createElement('div');
                 row.className = 'device-row';
-                row.innerHTML = `<span>${st.name}</span><span style="color:${color}; font-weight:bold">${st.currentPM.toFixed(1)}</span>`;
+                const opacity = Math.min(1, st.currentPM / 100) * 0.8 + 0.2;
+                row.innerHTML = `<span>${st.name}</span><span style="opacity:${opacity}">${st.currentPM.toFixed(1)}</span>`;
                 list.appendChild(row);
             });
 
-            const avg = stations.size > 0 ? (total / stations.size).toFixed(1) : "0.0";
+            const avg = total / (stations.size || 1);
+            document.getElementById('avg-pm').innerText = avg.toFixed(1);
             document.getElementById('total-st').innerText = stations.size;
-            document.getElementById('avg-pm').innerText = avg;
             document.getElementById('max-pm').innerText = max.toFixed(1);
-            updateChart(parseFloat(avg));
+            updateLuxChart(avg);
         }
 
-        function logStream(msg) {
-            const panel = document.getElementById('log-console');
-            const row = document.createElement('div');
-            row.innerHTML = `> [${new Date().toLocaleTimeString()}] ${msg}`;
-            panel.prepend(row);
-            if (panel.children.length > 10) panel.removeChild(panel.lastChild);
-        }
-
-        // --- Chart Config ---
-        const mainChart = new Chart(document.getElementById('mainChart'), {
+        // --- Chart ---
+        const luxChart = new Chart(document.getElementById('luxChart'), {
             type: 'line',
-            data: { labels: [], datasets: [{ data: [], borderColor: '#00f2ff', tension: 0.4, fill: true, backgroundColor: 'rgba(0, 242, 255, 0.1)' }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: false }, scales: { x: { display: false }, y: { ticks: { color: '#666' }, grid: { color: '#111' } } } }
+            data: { labels: [], datasets: [{ data: [], borderColor: '#c5a059', borderWeight: 1, tension: 0.5, pointRadius: 0, fill: false }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: false }, scales: { x: { display: false }, y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { display: false } } } }
         });
-        function updateChart(val) {
-            if (mainChart.data.labels.length > 30) { mainChart.data.labels.shift(); mainChart.data.datasets[0].data.shift(); }
-            mainChart.data.labels.push(''); mainChart.data.datasets[0].data.push(val);
-            mainChart.update('none');
+        function updateLuxChart(val) {
+            if (luxChart.data.labels.length > 50) { luxChart.data.labels.shift(); luxChart.data.datasets[0].data.shift(); }
+            luxChart.data.labels.push(''); luxChart.data.datasets[0].data.push(val);
+            luxChart.update('none');
         }
 
-        // --- Uptime Timer ---
-        setInterval(() => {
-            const diff = Date.now() - startTime;
-            const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
-            const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
-            const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
-            document.getElementById('uptime').innerText = `${h}:${m}:${s}`;
-        }, 1000);
-
-        // --- Main Animation Loop ---
+        // --- Animate ---
         function animate() {
             requestAnimationFrame(animate);
             const now = performance.now();
-            const dt = (now - lastFrameTime) / 1000;
-            lastFrameTime = now;
+            const dt = (now - lastFrame) / 1000;
+            lastFrame = now;
             const time = now * 0.001;
 
             controls.update();
 
-            // Update Nodes with KlakMath Patterns
             stations.forEach(st => {
-                // 1. Exponential Smoothing for PM Values
-                st.currentPM = Klak.expStep(st.currentPM, st.targetPM, 2, dt);
+                st.currentPM = Zen.expStep(st.currentPM, st.targetPM, 1.5, dt);
 
-                // 2. Organic Floating via Gradient Noise
-                const nx = Klak.noise1D(time * 0.2 + st.noiseOffset) - 0.5;
-                const ny = Klak.noise1D(time * 0.3 + st.noiseOffset + 100) - 0.5;
-                const nz = Klak.noise1D(time * 0.1 + st.noiseOffset + 200) - 0.5;
-                st.node.position.x += nx * 0.5;
-                st.node.position.y += ny * 0.5;
-                st.node.position.z += nz * 0.5;
+                // Organic Movement
+                st.node.position.y += Math.sin(time + st.noiseOff) * 0.2;
+                st.node.position.x += Math.cos(time * 0.5 + st.noiseOff) * 0.1;
 
-                // 3. Dynamic Visual Response
-                const nodeColor = getPMColorHex(st.currentPM);
-                st.node.children[0].material.color.setHex(nodeColor);
-                st.node.children[0].material.emissive.setHex(nodeColor);
+                // Luxury Visuals
+                const p = Math.min(1, st.currentPM / 100);
+                const color = new THREE.Color().setHSL(0.55 - p * 0.5, 0.8, 0.6); // Cyan to Purple
+                st.node.children[0].material.color.lerp(color, 0.05);
+                st.node.children[0].material.emissive.lerp(color, 0.05);
+                st.node.children[0].material.emissiveIntensity = p * 0.5 + 0.1;
 
-                st.node.rotation.y += 0.03;
-                st.node.children[1].rotation.z += 0.05;
-                st.node.children[2].rotation.x += 0.04;
-
-                const s = 0.5 + (st.currentPM / 50) + Math.sin(time * 2) * 0.1;
+                const s = 0.8 + (st.currentPM / 80);
                 st.node.scale.set(s, s, s);
             });
 
-            // Update Neural Mesh Network
+            // Subtle Connections
             meshGroup.clear();
-            const list = Array.from(stations.values());
-            for (let i = 0; i < list.length; i++) {
-                for (let j = i + 1; j < list.length; j++) {
-                    const dist = list[i].node.position.distanceTo(list[j].node.position);
-                    if (dist < 300) {
-                        const geo = new THREE.BufferGeometry().setFromPoints([list[i].node.position, list[j].node.position]);
-                        const mat = new THREE.LineBasicMaterial({
-                            color: 0x00f2ff, transparent: true,
-                            opacity: (1 - dist / 300) * 0.2 * (0.5 + Math.sin(time * 5 + i) * 0.5)
-                        });
+            const arr = Array.from(stations.values());
+            for (let i = 0; i < arr.length; i++) {
+                for (let j = i + 1; j < arr.length; j++) {
+                    const d = arr[i].node.position.distanceTo(arr[j].node.position);
+                    if (d < 250) {
+                        const geo = new THREE.BufferGeometry().setFromPoints([arr[i].node.position, arr[j].node.position]);
+                        const mat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: (1 - d / 250) * 0.03 });
                         meshGroup.add(new THREE.Line(geo, mat));
                     }
                 }
@@ -510,6 +464,11 @@
             composer.render();
         }
         animate();
+
+        setInterval(() => {
+            const d = Date.now() - startTime;
+            document.getElementById('uptime').innerText = new Date(d).toISOString().substr(11, 8);
+        }, 1000);
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
