@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI ROBOTIC ASSEMBLY | LUMINOUS LAB</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@300;500;700&display=swap');
+
+        :root {
+            --bg-light: #f8f9fb;
+            --accent-gold: #c5a059;
+            --accent-blue: #007aff;
+            --danger: #ff3b30;
+            --success: #34c759;
+            --panel-glass: rgba(255, 255, 255, 0.8);
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-light);
+            color: #1d1d1f;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #hud {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 40px;
+            z-index: 10;
+        }
+
+        .panel {
+            background: var(--panel-glass);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(20px);
+            padding: 25px;
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
+            pointer-events: auto;
+        }
+
+        .brand {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 0.8rem;
+            letter-spacing: 0.4em;
+            color: var(--accent-gold);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .status-box {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ccc;
+        }
+
+        .status-active {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .vision-feed {
+            width: 280px;
+            height: 160px;
+            background: #000;
+            border-radius: 12px;
+            margin-top: 15px;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid #333;
+        }
+
+        .scanning-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: var(--accent-blue);
+            top: 0;
+            animation: scan 2s linear infinite;
+            box-shadow: 0 0 10px var(--accent-blue);
+        }
+
+        @keyframes scan {
+            100% {
+                top: 100%;
+            }
+        }
+
+        .nav-footer {
+            display: flex;
+            gap: 20px;
+            pointer-events: auto;
+        }
+
+        .nav-btn {
+            padding: 10px 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            background: #fff;
+            color: #333;
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+
+        .nav-btn:hover {
+            background: #f0f0f0;
+            transform: translateY(-2px);
+        }
+
+        .nav-btn.active {
+            background: #000;
+            color: #fff;
+            border-color: #000;
+        }
+
+        .ai-label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 122, 255, 0.8);
+            color: #fff;
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        #detection-result {
+            font-family: monospace;
+            font-size: 11px;
+            color: #0f0;
+            margin-top: 10px;
+        }
+
+        .loading {
+            position: fixed;
+            inset: 0;
+            background: #fff;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: 1s ease-in-out;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loading" class="loading">
+        <div style="font-family:'Outfit'; font-size: 2rem; letter-spacing: 0.5em; color: #c5a059;">FACTORY_AI</div>
+        <div style="font-size: 10px; margin-top: 20px; opacity: 0.4;">INITIALIZING KINEMATIC ENGINE v4.0</div>
+    </div>
+
+    <div id="hud">
+        <div style="display: flex; justify-content: space-between;">
+            <!-- Operator Panel -->
+            <div class="panel" style="width: 320px;">
+                <div class="brand">AI ASSEMBLY NODE</div>
+                <div class="status-box">
+                    <div id="arm-status" class="status-indicator status-active"></div>
+                    <div style="font-size: 0.9rem; font-weight: 600;">ROBOTIC_ARM_01: ONLINE</div>
+                </div>
+
+                <div style="border-top: 1px solid rgba(0,0,0,0.05); padding-top: 15px;">
+                    <div style="font-size: 0.7rem; opacity: 0.5; margin-bottom: 5px;">JOINT COULTER</div>
+                    <div id="joints-log" style="font-family: monospace; font-size: 10px; color: #666;">
+                        BASE: 0.00°<br>SHOULDER: 0.00°<br>ELBOW: 0.00°
+                    </div>
+                </div>
+
+                <div class="vision-feed" id="vision-box">
+                    <div class="ai-label">AI VISION ANALYTICS</div>
+                    <div class="scanning-line"></div>
+                    <div
+                        style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;">
+                        <div id="target-crosshair"
+                            style="width: 40px; height: 40px; border: 1px solid #0f0; border-radius: 4px; opacity: 0.5;">
+                        </div>
+                    </div>
+                    <div id="detection-result" style="position: absolute; bottom: 10px; left: 10px;">
+                        SCANNING...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Panel -->
+            <div class="panel" style="width: 280px;">
+                <div class="brand">PRODUCTION STATS</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <div style="font-size: 0.6rem; opacity: 0.4;">TOTAL_PICK</div>
+                        <div id="total-picks" style="font-size: 1.5rem; font-weight: 700;">0</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.6rem; opacity: 0.4;">ACCURACY</div>
+                        <div id="acc-rate" style="font-size: 1.5rem; font-weight: 700; color: var(--success);">100%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+            <div class="panel" style="width: 400px; padding: 15px; font-size: 0.7rem;">
+                <div style="color: var(--accent-gold); font-weight: bold; margin-bottom: 5px;">SYSTEM_LOG</div>
+                <div id="sys-log" style="font-family: monospace; color: #888;">
+                    > BOOTING_FACTORY_CONTROL_CORE...<br>
+                    > ESTABLISHING_AI_CAMERA_LINK...
+                </div>
+            </div>
+
+            <div class="nav-footer">
+                <a href="index.html" class="nav-btn">MAP_BASE</a>
+                <a href="dustboy-3d.html" class="nav-btn">DUST_INTEL</a>
+                <a href="factory-3d.html" class="nav-btn active">ROBOT_AI</a>
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- Kinematics & AI Logic ---
+        const RobotAI = {
+            totalPicks: 0,
+            isMoving: false,
+            targetReached: false,
+
+            log(msg) {
+                const log = document.getElementById('sys-log');
+                const line = document.createElement('div');
+                line.innerHTML = `> [${new Date().toLocaleTimeString()}] ${msg}`;
+                log.prepend(line);
+                if (log.children.length > 5) log.removeChild(log.lastChild);
+            }
+        };
+
+        // --- Scene Init ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf5f7fa);
+        scene.fog = new THREE.Fog(0xf5f7fa, 500, 2000);
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 5000);
+        camera.position.set(200, 200, 400);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        // Lights
+        const ambient = new THREE.AmbientLight(0xffffff, 1.2);
+        scene.add(ambient);
+        const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+        sun.position.set(200, 500, 200);
+        sun.castShadow = true;
+        sun.shadow.camera.left = -500; sun.shadow.camera.right = 500;
+        sun.shadow.camera.top = 500; sun.shadow.camera.bottom = -500;
+        scene.add(sun);
+
+        // Factory Floor
+        const floorGeo = new THREE.PlaneGeometry(2000, 2000);
+        const floorMat = new THREE.MeshPhongMaterial({ color: 0xffffff });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        // Grid
+        const grid = new THREE.GridHelper(1000, 40, 0x000000, 0xeeeeee);
+        grid.material.transparent = true;
+        grid.material.opacity = 0.1;
+        scene.add(grid);
+
+        // --- Robotic Arm Model ---
+        const robotBase = new THREE.Group();
+        scene.add(robotBase);
+
+        // Base Part
+        const baseGeo = new THREE.CylinderGeometry(20, 25, 10, 32);
+        const metalMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.8, roughness: 0.2 });
+        const whiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.1, roughness: 0.5 });
+        const baseMesh = new THREE.Mesh(baseGeo, metalMat);
+        baseMesh.position.y = 5;
+        baseMesh.castShadow = true;
+        robotBase.add(baseMesh);
+
+        // Arm Links
+        function createLink(size, material) {
+            const group = new THREE.Group();
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(size.x, size.y, size.z), material);
+            mesh.position.y = size.y / 2;
+            mesh.castShadow = true;
+            group.add(mesh);
+            return group;
+        }
+
+        const shoulder = new THREE.Group();
+        shoulder.position.y = 10;
+        robotBase.add(shoulder);
+
+        const arm1 = createLink({ x: 10, y: 60, z: 10 }, whiteMat);
+        shoulder.add(arm1);
+
+        const elbow = new THREE.Group();
+        elbow.position.y = 60;
+        arm1.add(elbow);
+
+        const arm2 = createLink({ x: 10, y: 50, z: 10 }, whiteMat);
+        elbow.add(arm2);
+
+        const wrist = new THREE.Group();
+        wrist.position.y = 50;
+        arm2.add(wrist);
+
+        const gripper = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 10, 16), metalMat);
+        gripper.position.y = 5;
+        wrist.add(gripper);
+
+        // --- Conveyor & Boxes ---
+        const conveyorGeo = new THREE.BoxGeometry(400, 5, 60);
+        const conveyor = new THREE.Mesh(conveyorGeo, metalMat);
+        conveyor.position.set(100, 2.5, 0);
+        conveyor.receiveShadow = true;
+        scene.add(conveyor);
+
+        let currentBox = null;
+        function spawnBox() {
+            const boxGeo = new THREE.BoxGeometry(25, 25, 25);
+            const boxMat = new THREE.MeshStandardMaterial({ color: 0xc5a059 });
+            const box = new THREE.Mesh(boxGeo, boxMat);
+
+            // Random orientation (Correct way = UP)
+            const isCorrect = Math.random() > 0.4;
+            box.userData = { isCorrect, picked: false };
+
+            // Visual label
+            const labelGeo = new THREE.PlaneGeometry(15, 15);
+            const labelMat = new THREE.MeshBasicMaterial({
+                color: isCorrect ? 0x34c759 : 0xff3b30,
+                side: THREE.DoubleSide,
+                transparent: true, opacity: 0.8
+            });
+            const label = new THREE.Mesh(labelGeo, labelMat);
+            label.position.set(0, 12.6, 0);
+            label.rotation.x = -Math.PI / 2;
+            box.add(label);
+
+            box.position.set(300, 15, 0);
+            box.castShadow = true;
+            scene.add(box);
+            currentBox = box;
+
+            RobotAI.log(isCorrect ? "AI_DETECTED: CONFIG_VALID [UP_STREAM]" : "AI_DETECTED: CONFIG_INVALID [REJECT]");
+            document.getElementById('detection-result').innerText = isCorrect ? "VALID_CARGO" : "ORIENTATION_ERROR";
+            document.getElementById('detection-result').style.color = isCorrect ? "#0f0" : "#f00";
+        }
+
+        spawnBox();
+
+        // --- Animation Logic ---
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = performance.now() * 0.001;
+
+            controls.update();
+
+            // Conveyor Movement
+            if (currentBox && !currentBox.userData.picked) {
+                currentBox.position.x -= 1;
+
+                // Detection Point (Stop and Inspect)
+                if (currentBox.position.x < 100 && !RobotAI.isMoving) {
+                    if (currentBox.userData.isCorrect) {
+                        RobotAI.isMoving = true;
+                        RobotAI.log("ARM_ENGAGING: INITIATING_PICK_SEQUENCE");
+                    } else {
+                        // Let it pass
+                        if (currentBox.position.x < -100) {
+                            scene.remove(currentBox);
+                            spawnBox();
+                        }
+                    }
+                }
+            }
+
+            // Robotic Arm Animation (Simplified IK/Move)
+            if (RobotAI.isMoving) {
+                // 1. Move to box
+                if (!RobotAI.targetReached) {
+                    const targetX = currentBox.position.x;
+                    robotBase.rotation.y = THREE.MathUtils.lerp(robotBase.rotation.y, Math.atan2(currentBox.position.z, targetX - 0), 0.1);
+                    shoulder.rotation.z = THREE.MathUtils.lerp(shoulder.rotation.z, 0.8, 0.05);
+                    elbow.rotation.z = THREE.MathUtils.lerp(elbow.rotation.z, 1.2, 0.05);
+
+                    if (Math.abs(shoulder.rotation.z - 0.8) < 0.01) {
+                        RobotAI.targetReached = true;
+                        currentBox.userData.picked = true;
+                        currentBox.parent = wrist;
+                        currentBox.position.set(0, 15, 0);
+                        RobotAI.log("GRIP_SUCCESS: CARGO_SECURED");
+                    }
+                } else {
+                    // 2. Move to Assembly Point
+                    shoulder.rotation.z = THREE.MathUtils.lerp(shoulder.rotation.z, -0.5, 0.05);
+                    elbow.rotation.z = THREE.MathUtils.lerp(elbow.rotation.z, 0.2, 0.05);
+                    robotBase.rotation.y = THREE.MathUtils.lerp(robotBase.rotation.y, Math.PI, 0.05);
+
+                    if (Math.abs(robotBase.rotation.y - Math.PI) < 0.01) {
+                        RobotAI.isMoving = false;
+                        RobotAI.targetReached = false;
+                        scene.remove(currentBox);
+                        RobotAI.totalPicks++;
+                        document.getElementById('total-picks').innerText = RobotAI.totalPicks;
+                        RobotAI.log("ASSEMBLY_COMPLETE: CYCLE_FINISHED");
+
+                        // Reset Arm
+                        shoulder.rotation.z = 0;
+                        elbow.rotation.z = 0;
+                        robotBase.rotation.y = 0;
+
+                        setTimeout(spawnBox, 1000);
+                    }
+                }
+            }
+
+            // Update HUD
+            document.getElementById('joints-log').innerHTML = `
+                BASE: ${(robotBase.rotation.y * 180 / Math.PI).toFixed(2)}°<br>
+                SHOULDER: ${(shoulder.rotation.z * 180 / Math.PI).toFixed(2)}°<br>
+                ELBOW: ${(elbow.rotation.z * 180 / Math.PI).toFixed(2)}°
+            `;
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        setTimeout(() => {
+            document.getElementById('loading').style.opacity = '0';
+            setTimeout(() => document.getElementById('loading').style.display = 'none', 1000);
+        }, 1500);
+
+    </script>
+</body>
+
+</html>
