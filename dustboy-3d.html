@@ -13,42 +13,41 @@
         :root {
             --neon-blue: #00f2ff;
             --neon-pink: #ff00ea;
-            --neon-green: #3fb950;
-            --neon-yellow: #fbbf24;
-            --neon-red: #f87171;
-            --neon-purple: #c084fc;
-            --bg-dark: #020205;
-            --glass: rgba(10, 15, 30, 0.7);
+            --bg-dark: #000210;
         }
 
         body {
             margin: 0;
             background-color: var(--bg-dark);
-            color: #fff;
-            font-family: 'Rajdhani', sans-serif;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
             overflow: hidden;
-            text-transform: uppercase;
-            letter-spacing: 1px;
         }
 
         canvas {
             display: block;
         }
 
-        /* Scanning Line Effect */
-        body::before {
-            content: "";
-            position: fixed;
+        /* Slanted HUD Borders */
+        .panel {
+            background: rgba(10, 15, 40, 0.7);
+            border: 1px solid var(--neon-blue);
+            backdrop-filter: blur(15px);
+            padding: 25px;
+            pointer-events: auto;
+            clip-path: polygon(0% 0%, 90% 0%, 100% 10%, 100% 100%, 10% 100%, 0% 90%);
+            box-shadow: inset 0 0 20px rgba(0, 242, 255, 0.2);
+            position: relative;
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-                linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 2px, 3px 100%;
-            z-index: 1000;
-            pointer-events: none;
-            opacity: 0.3;
+            width: 40px;
+            height: 5px;
+            background: var(--neon-blue);
         }
 
         #ui-overlay {
@@ -58,128 +57,88 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 30px;
-            z-index: 10;
+            padding: 40px;
         }
 
-        .header-section {
+        .header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
         }
 
-        .hud-panel {
-            background: var(--glass);
-            border: 1px solid rgba(0, 242, 255, 0.3);
-            border-left: 4px solid var(--neon-blue);
-            backdrop-filter: blur(15px);
-            padding: 20px;
-            pointer-events: auto;
-            box-shadow: 0 0 30px rgba(0, 242, 255, 0.1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hud-panel::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, var(--neon-blue), transparent);
-            animation: scan-line 3s linear infinite;
-        }
-
-        @keyframes scan-line {
-            0% {
-                transform: translateY(-100%);
-            }
-
-            100% {
-                transform: translateY(500%);
-            }
-        }
-
         .title {
-            font-family: 'Orbitron', sans-serif;
             color: var(--neon-blue);
-            font-size: 1.4rem;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
+            font-size: 1.5rem;
+            letter-spacing: 5px;
             text-shadow: 0 0 10px var(--neon-blue);
+            margin-bottom: 20px;
         }
 
-        .data-grid {
+        .stat-group {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            gap: 20px;
         }
 
-        .stat-box {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 12px;
-            text-align: center;
+        .stat-card {
+            border-left: 2px solid var(--neon-pink);
+            padding-left: 15px;
         }
 
         .stat-label {
             font-size: 0.7rem;
-            opacity: 0.6;
-            margin-bottom: 5px;
-        }
-
-        .stat-value {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
             color: var(--neon-pink);
+            opacity: 0.8;
         }
 
-        .device-list {
+        .stat-val {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+
+        .device-scroll {
             margin-top: 20px;
-            max-height: 40vh;
+            height: 300px;
             overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: var(--neon-blue) transparent;
+            scrollbar-width: none;
+            mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
         }
 
-        .device-item {
+        .data-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0, 242, 255, 0.1);
+        }
+
+        #log-console {
+            width: 450px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px dashed var(--neon-blue);
             padding: 10px;
-            margin-bottom: 8px;
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(0, 242, 255, 0.1);
-            transition: 0.3s;
-        }
-
-        .device-item:hover {
-            background: rgba(0, 242, 255, 0.05);
-            border-color: var(--neon-blue);
-            transform: scale(1.02);
-        }
-
-        .aqi-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 8px;
-            box-shadow: 0 0 8px currentColor;
-        }
-
-        #log-panel {
-            font-family: 'Courier New', monospace;
+            font-family: monospace;
             font-size: 10px;
-            color: #0f0;
-            padding: 10px;
-            height: 120px;
+            color: #00ffaa;
             overflow: hidden;
-            background: rgba(0, 20, 0, 0.3);
-            border-left: 2px solid #0f0;
+            pointer-events: auto;
+        }
+
+        /* Glitch Animation */
+        .glitch {
+            animation: glitch 1s infinite alternate;
+        }
+
+        @keyframes glitch {
+            0% {
+                transform: translate(0);
+                text-shadow: 2px 2px var(--neon-pink);
+            }
+
+            100% {
+                transform: translate(-1px, 1px);
+                text-shadow: -2px -2px var(--neon-blue);
+            }
         }
 
         .loading-screen {
@@ -334,42 +293,41 @@
 
         // --- Scene Setup ---
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 2000);
-        camera.position.set(50, 40, 150);
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 4000);
+        camera.position.set(0, 100, 300);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.toneMapping = THREE.ReinhardToneMapping;
         document.body.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.autoRotate = true;
-        controls.autoRotateSpeed = 0.5;
+        controls.autoRotateSpeed = 0.3;
 
-        // --- Post Processing (FUTURISTIC GLOW) ---
-        const renderScene = new RenderPass(scene, camera);
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0.2;
-        bloomPass.strength = 0.8;
-        bloomPass.radius = 0.3;
+        // Neural Mesh (Connections)
+        const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.05 });
+        const lineGroup = new THREE.Group();
+        scene.add(lineGroup);
 
-        const composer = new EffectComposer(renderer);
-        composer.addPass(renderScene);
-        composer.addPass(bloomPass);
-
-        // --- Environment ---
-        const hexGrid = new THREE.GridHelper(500, 50, 0x00f2ff, 0x050505);
-        hexGrid.position.y = -50;
-        hexGrid.material.opacity = 0.1;
-        hexGrid.material.transparent = true;
+        // Env
+        const hexGrid = new THREE.PolarGridHelper(500, 16, 8, 64, 0x00f2ff, 0x001122);
+        hexGrid.position.y = -100;
         scene.add(hexGrid);
 
-        const light = new THREE.PointLight(0x00f2ff, 50, 500);
-        light.position.set(50, 100, 50);
+        const light = new THREE.DirectionalLight(0xffffff, 2);
+        light.position.set(1, 1, 1);
         scene.add(light);
-        scene.add(new THREE.AmbientLight(0x101020, 0.5));
+        scene.add(new THREE.AmbientLight(0x002244, 2));
+
+        // --- Post Processing ---
+        const composer = new EffectComposer(renderer);
+        composer.addPass(new RenderPass(scene, camera));
+
+        const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloom.threshold = 0.1; bloom.strength = 1.0; bloom.radius = 0.5;
+        composer.addPass(bloom);
 
         // --- Nodes Management ---
         function createHoloNode(st) {
